@@ -1,0 +1,205 @@
+---
+title: "Hypothesis and Regression Assignment"
+Author: "Anjali Ashok"
+Date: "11-10-2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1
+Explore the dataset. What can we tell about the target variable and its relationship with the
+explanatory variables provided in the dataset?
+
+
+```{r data, echo=TRUE, fig.height=15, fig.width=15}
+dat<- read.csv("Life Expectancy Data.csv") #load data from csv file
+data<-as.data.frame(dat) #convert data to a dataframe
+lapply(data,class) #this is to check the variable types in dataset
+lifeExp <- unlist(lapply(data,class)) == "numeric" #numeric type vaiable extraction
+head(lifeExp,10)
+cor(data[,lifeExp]) # finding the co-relation between the variables by excluding the non-numeric columns.
+plot(data[,lifeExp]) #plotting correlation 
+library(tidyverse) #loading tidyverse library
+data <- data %>% #drop na fields
+  drop_na()
+str(data)
+summary(data)
+tempY<-data[,4] #storing the target variable
+head(tempY,10)
+tempX<-(data[,lifeExp])[,-1] #storing only numerical variables
+head(tempX,10)
+#co-relation between target and explanatory variables
+cor(data$Life.expectancy,data$Adult.Mortality) #co-relation between target variable and adult mortality
+cor(data$Life.expectancy,data$infant.deaths)  #co-relation between target variable and infant deaths
+cor(data$Life.expectancy,data$Alcohol)  #co-relation between target variable and Alcohol
+cor(data$Life.expectancy,data$Schooling)  #co-relation between target variable and Schooling
+cor(data$Life.expectancy,data$Population)  #co-relation between target variable and Population
+cor(data$Life.expectancy,data$Hepatitis.B)  #co-relation between target variable and Hepatitis B
+cor(data$Life.expectancy,data$Polio)  #co-relation between target variable and Polio
+cor(data$Life.expectancy,data$Diphtheria)  #co-relation between target variable and Diphtheria
+cor(data$Life.expectancy,data$percentage.expenditure)  #co-relation between target variable and expenditure
+# plots between target variable end Explanatory variables
+
+par(mfrow=c(4,3)) 
+for (i in 1:ncol(tempX)){ 
+  plot(tempX[,i],tempY,xlab=colnames(tempX)[i],ylab="life Expextency") #iterating for every column in tempX
+}
+```
+
+
+From the co-relation values and the graph we plotted above we can find the relationships between explanatory and the target variable. In the case of adult mortality(-0.7025231) we cane see that it have a high negative co-relation. Schooling have a high positive co-relation(0.72763) with the target variable. The variables like Alcohol, Polio, Diphtheria and expenditure also have a positive relation with Our target variable life expectancy.
+
+
+# Question 2
+Build a regression model to explain Life expectancy.
+
+
+regression on income composition of resources and schooling(I chose a multivariate model, I have chosen the independent variables based on the co-relation value and plot and p value)
+
+
+```{r model}
+model<-lm(Life.expectancy ~ Income.composition.of.resources+Schooling, data=data) #fit the model
+summaryModel<- summary(model)
+summaryModel #summary of the model
+names(summaryModel)
+summaryModel$coefficients
+pval<-summaryModel$coefficients[,4] #getting the p-values
+pval
+pval <= 0.05 # comparing the p-values with a=0.05, on comparing both independent variable gives true means  if they are significant. 
+summaryModel$r.squared #finding the r-squared which is a statistical measure to find the goodness of fit in regression model.
+aicModel<- AIC(model) #since r.squared is not always good we will use Akaike Information Criterion (AIC)
+aicModel
+```
+
+
+This is the second model I built using all the variables
+
+```{r modelSecond}
+#regression on all the variables
+modelAlc<-lm(Life.expectancy ~., data=data)
+sumAlc<- summary(modelAlc)
+sumAlc
+pvalAlc<-sumAlc$coefficients[,4]
+pvalAlc
+pvalAlc <= 0.05 
+sumAlc$r.squared
+aicAlc<- AIC(modelAlc)
+aicAlc #from the aic values this model is better so I chose this model as my final model.
+```
+
+# Question 3
+Compare the errors of your model with a model that will always predict the average of Life
+expectancy. Do you have evidence that your model is better?
+
+```{r modelLEl}
+#model to predict average life expectancy always
+modelLE<-lm(Life.expectancy~1, data=data) # fit the model
+sumLE<-summary(modelLE) #model summary
+sumLE
+aicLE<- AIC(modelLE) #aic of the model
+aicLE
+
+
+s <- sort(sample(1:nrow(data),100)) #splitting the data using sample()
+xTest <- data[s,] #data for prediction
+xTrain <- data[-s,] #data to train the model
+modelTrain<-lm(Life.expectancy ~ Income.composition.of.resources+Schooling, data=xTrain)
+modelTrain
+
+
+```
+prediction using new data
+```{r predict}
+predict(modelTrain, newdata = xTest) #prediction using test data
+```
+prediction using the train data
+```{r }
+predict(modelTrain)
+```
+
+In the summary of the model, modelAlc and the modelLE we can find the residual standard error which can be used to compare these two models. modelLE will always predict the average of life expectancy. model will predict based on the two independent variables income composition of resources and schooling, modelAlc have all the variables  for regression.Residual standard error gives us an estimation of how well the model fits our dataset.
+ The residual standard error if model is 5.649, modelAlc is 1.665 while that of modelLE is 8.797 . From this we can see that modelAlc predict the life expectancy with an average error which is lower than modelLE and model. We also have AIC In the case of model we have an AIC value of 10395.28, aic of modelAlc is 6506.637, but in the case of modelLE the AIC is  11853.8 which is higher than the first two models.model with all the varibales as the predicting variables ie, modelAlc is the one with least aic. In the case of aic, lesser the value better your model fits with the dataset.
+ In summary from both the aic and residual standard error we can say that the model modelAlc is better than the model which always predicts the average of life expectancy(modelLE).
+ 
+# Use your model to answer the following questions:
+
+## * What are the predicting variables that affect the life expectancy?
+  
+  From the first modelAlc we can see that the p-value for is less than 0.05 for schooling and alcohol. I have also tried to find out the co-relation co-relation co-efficient of the various variables in the data set. From that we it is proved that schooling does affect the target variable it has a co-relation of 0.72763 which proves that it has a high positive co=relation with the target variable. Adult mortality has a co-relation co-efficient of -0.7025231 ie it has high negative relation with life expectancy. Similarly the co-relation co-efficients of alcohol, Polio,percentage expenditure, diphtheria are 0.4027183, 0.3272944, 0.4096308, 0.3413312. They can also be selected as predictive variable as they also have a an effect on target variable.
+ 
+## * Should a country having a lower life expectancy value(<65) increase its healthcare expenditure in order to   improve its average lifespan?
+```{r health, echo=TRUE}
+cor(data$Life.expectancy,data$percentage.expenditure)  #co-relation between target variable and expenditure
+plot(data$Life.expectancy,data$percentage.expenditure, xlab = "Life Expectancy", ylab = "Percentage expenditure")
+  
+```
+  
+  
+  The countries with lower life expectancy should increase their expenditure on health. From the above plot we can see that those countries with higher expenditure are all having a high life expectancy. But there is no country with a high expenditure greater than let's say 2000, which have a high life expectancy. So increasing the expenditure for the health care will also increase the life expectancy of the country. The positive co-relation co-efficient also supports the above findings.
+  
+## * How does Infant and Adult mortality rates affect life expectancy?
+```{r, echo=TRUE}
+  cor(data$Life.expectancy,data$Adult.Mortality)
+  cor(data$Life.expectancy,data$infant.deaths)
+  par(mfrow=c(1,2))
+  plot(data$Life.expectancy,data$Adult.Mortality, xlab = "Life Expectancy", ylab = "Adult mortality")
+  plot(data$Life.expectancy,data$infant.deaths, xlab = "Life Expectancy", ylab = "Infant mortality")
+```
+
+
+  Adult mortality have a high negative co-relation co-efficient with life expectancy ie, -0.7025231. So lower the adult mortality higher the life expectancy will be. In the case of infant mortality it have negative a co-relation co-efficient of 0.1690738 it also have a p-value less than 0.o5 so it also have influence in life expectancy. Since it have negative co-relation as the infant mortality increases life expectancy decreases.
+  
+## * Does Life Expectancy have a positive or negative connection with eating habits, lifestyle, exercise, smoking, drinking alcohol etc.
+
+```{r, echo=TRUE}
+  cor(data$Life.expectancy,data$Alcohol)
+  plot(data$Life.expectancy,data$Alcohol, xlab = "Life Expectancy", ylab = "Drinking Alcohol")
+```
+
+
+  From the co-relation co-efficient value of alcohol ie,  0.4027183 it shows a positive relation with life expectancy. But we can see a higher concentration of data points near x axis between y value 55 to 80 which means country with lower alcohol tend to have a life expectancy between these values. The other variables I dont see in the data provided.
+  
+## * What is the impact of schooling on the lifespan of humans?
+
+```{r, echo=TRUE}
+  cor(data$Life.expectancy,data$Schooling)  #co-relation between target variable and Schooling
+  plot(data$Life.expectancy,data$Schooling, xlab = "Life Expectancy", ylab = "Schooling")
+```
+
+  Schooling have a positive co-relation co-efficient with life expectancy with a value of 0.72763.  The plot above also shows a positive relationship. This means as The people of the country becomes educated their life expectancy also increases.
+ 
+## * Does Life Expectancy have positive or negative relationship with drinking alcohol?
+ 
+```{r, echo=TRUE}
+  cor(data$Life.expectancy,data$Alcohol)
+  plot(data$Life.expectancy,data$Alcohol, xlab = "Life Expectancy", ylab = "Drinking Alcohol")
+```
+  
+  Co-relation co-efficient value of alcohol is 0.4027183. This shows a positive relationship between life expectancy and alcohol consumption. But the plot doesnt show that much of a positive relationship.
+  
+## * Do densely populated countries tend to have lower life expectancy?
+
+```{r, echo=TRUE}
+  cor(data$Life.expectancy,data$Population)  #co-relation between target variable and Population
+  plot(data$Life.expectancy,data$Population, xlab = "Life Expectancy", ylab = "Population" )
+```
+
+  Population shows a negative relation with co-relation co-efficient of -0.02230498. That is closer to zero. So it doesn't have much of an effect in life expectancy.
+  
+## * What is the impact of Immunization coverage on life Expectancy?
+
+```{r, echo=TRUE}
+  cor(data$Life.expectancy,data$Diphtheria)  #co-relation between target variable and Diphtheria
+  cor(data$Life.expectancy,data$Hepatitis.B)  #co-relation between target variable and Hepatitis B
+  par(mfrow=c(1,2))
+  plot(data$Life.expectancy,data$Diphtheria, xlab = "Life Expectancy", ylab = "Immunization against Diphtheria")
+  plot(data$Life.expectancy,data$Hepatitis.B, xlab = "Life Expectancy", ylab = "Immunization against Hepatitis.B")
+
+```
+
+  Immunization against Diphtheria and Immunization against Hepatitis.B have a co-relation co-efficient of 0.3413312 and 0.1999353 respectively. So it does have a small impact on the life expectancy ie, as the immunization increases there is little increase in the life expectancy. In the plot we can see high concentration of data points between 70 to 80 shows that countries with high immunization mostly have a high life expectancy ie, between 70 to 80.
